@@ -1,41 +1,103 @@
-
-
 services:
+
   db:
-    image: postgres:16
-    restart: always
+    image: postgres:12
     environment:
-
-      POSTGRES_DB: page_tracker
-      POSTGRES_USER: ales
-      POSTGRES_PASSWORD: ales
-      POSTGRES_HOST_AUTH_METHOD: trust  # Opravený formát
-
-
-    ports:
-      - "5433:5432"
+      - POSTGRES_DB=page_tracker
+      - POSTGRES_USER=ales
+      - POSTGRES_PASSWORD=ales
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     networks:
-      - backend
+      - db-network
 
   web:
     build: .
-    restart: always
+#    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
     ports:
       - "8000:8000"
-
+    environment:
+      - DATABASE_URL=postgres://myuser:mypassword@db/myapp
     depends_on:
       - db
     networks:
-      - backend
-    command: >
-      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+      - app-network
+      - db-network
+    command:
+        sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - web
+    networks:
+      - app-network
 
 volumes:
-  postgres_data:
+  postgres-data:
 
 networks:
-  backend:
+#  backend:
+#    driver: bridge
+  app-network:
     driver: bridge
+  db-network:
+      driver: bridge
 
+
+#
+#
+#services:
+#  db:
+#    image: postgres:16
+#    restart: always
+#    environment:
+#
+#      POSTGRES_DB: page_tracker
+#      POSTGRES_USER: ales
+#      POSTGRES_PASSWORD: ales
+#      POSTGRES_HOST_AUTH_METHOD: trust  # Opravený formát
+#
+#
+#    ports:
+#      - "5433:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    networks:
+#      - backend
+#
+#  web:
+#    build: .
+#    restart: always
+#    ports:
+#      - "8000:8000"
+#
+#    depends_on:
+#      - db
+#    networks:
+#      - backend
+#    command: >
+#      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+#
+#  nginx:
+#    image: nginx:latest
+#    ports:
+#      - "80:80"
+#    volumes:
+#      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+#    depends_on:
+#      - web
+#
+#volumes:
+#  postgres_data:
+#
+#networks:
+#  backend:
+#    driver: bridge
+#
