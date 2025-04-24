@@ -1,0 +1,41 @@
+
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+
+      POSTGRES_DB: page_tracker
+      POSTGRES_USER: ales
+      POSTGRES_PASSWORD: ales
+      POSTGRES_HOST_AUTH_METHOD: trust  # Opravený formát
+
+
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - db
+    networks:
+      - backend
+    command: >
+      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge
+
